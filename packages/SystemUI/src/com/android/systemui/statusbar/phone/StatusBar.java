@@ -5507,7 +5507,7 @@ private void updateQSPanel() {
                 Color mColor = systemColors.getPrimaryColor();
                 int mColorInt = mColor.toArgb();
                 Settings.System.putIntForUser(mContext.getContentResolver(),
-                        Settings.System.QS_PANEL_BG_COLOR, mColorInt, mCurrentUserId);
+                        Settings.System.QS_PANEL_BG_COLOR_WALL, mColorInt, mCurrentUserId);
             }
 
         }
