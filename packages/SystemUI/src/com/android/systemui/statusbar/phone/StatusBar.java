@@ -5489,7 +5489,13 @@ public class StatusBar extends SystemUI implements DemoMode,
             // Make sure we have the correct navbar/statusbar colors.
             mStatusBarWindowManager.setKeyguardDark(useDarkText);
         }
+        updateQSPanel();
+        updateCorners();
+    }
 
+
+
+private void updateQSPanel() {
         int userQsWallColorSetting = Settings.System.getIntForUser(mContext.getContentResolver(),
                     Settings.System.QS_PANEL_BG_USE_WALL, 0, mCurrentUserId);
         boolean setQsFromWall = userQsWallColorSetting == 1;
@@ -5802,7 +5808,9 @@ public class StatusBar extends SystemUI implements DemoMode,
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+    }
 
+        private void updateCorners() {
         boolean sysuiRoundedFwvals = Settings.Secure.getIntForUser(mContext.getContentResolver(),
                     Settings.Secure.SYSUI_ROUNDED_FWVALS, 1, mCurrentUserId) == 1;
         if (sysuiRoundedFwvals && !isCurrentRoundedSameAsFw()) {
@@ -7177,10 +7185,12 @@ public class StatusBar extends SystemUI implements DemoMode,
                 setQsPanelOptions();
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.SYSTEM_THEME_STYLE)) || uri.equals(Settings.System.getUriFor(
-                    Settings.System.SYSTEM_THEME_CURRENT_OVERLAY)) || uri.equals(Settings.Secure.getUriFor(
-                    Settings.Secure.SYSUI_ROUNDED_FWVALS)) || uri.equals(Settings.System.getUriFor(
-                    Settings.System.QS_PANEL_BG_USE_WALL))) {
+                    Settings.System.SYSTEM_THEME_CURRENT_OVERLAY))) {
                 updateThemeAndReinflate();
+            } else if (uri.equals(Settings.Secure.getUriFor(Settings.Secure.SYSUI_ROUNDED_FWVALS))) {
+                updateCorners();
+            } else if (uri.equals(Settings.System.getUriFor(Settings.System.QS_PANEL_BG_USE_WALL))) {
+                updateQSPanel();
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.ACCENT_PICKER))) {
                 // Unload the accents and update the accent only when the user asks.
@@ -7278,15 +7288,15 @@ public class StatusBar extends SystemUI implements DemoMode,
         float overlayalpha = Settings.System.getFloatForUser(mContext.getContentResolver(),
         Settings.System.LOCKSCREEN_ALPHA, 0.45f, UserHandle.USER_CURRENT);
         if (mScrimController != null) {
-        	mScrimController.setOverlayAlpha(overlayalpha);
-		}
+            mScrimController.setOverlayAlpha(overlayalpha);
+        }
     }
 
     public void setSecurityAlpha() {
         float securityoverlayalpha = Settings.System.getFloatForUser(mContext.getContentResolver(),
         Settings.System.LOCKSCREEN_SECURITY_ALPHA, 0.75f, UserHandle.USER_CURRENT);
         if (mScrimController != null) {
-        	mScrimController.setSecurityOverlayAlpha(securityoverlayalpha);
+            mScrimController.setSecurityOverlayAlpha(securityoverlayalpha);
         }
     }
     
