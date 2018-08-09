@@ -229,6 +229,13 @@
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
 
+    <!-- Sound Detection -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+  
+    <permission android:name="com.android.systemui.PROVIDER" android:protectionLevel="normal" />
+    <uses-permission android:name="com.android.systemui.PROVIDER"/>
+
     <application
         android:name=".SystemUIApplication"
         android:persistent="true"

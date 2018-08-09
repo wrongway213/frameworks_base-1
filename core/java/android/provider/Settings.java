@@ -4539,6 +4539,14 @@ public final class Settings {
         public static final String FORCE_AMBIENT_FOR_MEDIA = "force_ambient_for_media";
 
         /**
+         * Enables the sound detection over the ambient ticker
+         * 0 - disabled (by default, to save battery)
+         * 1 - enabled
+         * @hide
+         */
+        public static final String FORCE_AMBIENT_DETECTION_FOR_MEDIA = "force_ambient_detection_for_media";
+
+        /**
          * @hide
          */
         public static final String STATUS_BAR_LOGO = "status_bar_logo";

@@ -194,6 +194,8 @@ import com.android.systemui.SystemUI;
 import com.android.systemui.SystemUIFactory;
 import com.android.systemui.UiOffloadThread;
 import com.android.systemui.ambientmusic.AmbientIndicationContainer;
+import com.android.systemui.ambientmusic.soundrecognition.AmbientSongRecognition;
+import com.android.systemui.ambientmusic.soundrecognition.AmbientSongRecognition.Results;
 import com.android.systemui.assist.AssistManager;
 import com.android.systemui.chaos.lab.gestureanywhere.GestureAnywhereView;
 import com.android.systemui.classifier.FalsingLog;
@@ -306,7 +308,8 @@ public class StatusBar extends SystemUI implements DemoMode,
         ActivatableNotificationView.OnActivatedListener,
         ExpandableNotificationRow.ExpansionLogger, NotificationData.Environment,
         ExpandableNotificationRow.OnExpandClickListener, InflationCallback,
-        ColorExtractor.OnColorsChangedListener, ConfigurationListener, PackageChangedListener {
+        ColorExtractor.OnColorsChangedListener, ConfigurationListener, PackageChangedListener,
+        AmbientSongRecognition.Callback {
     public static final boolean MULTIUSER_DEBUG = false;
 
     public static final boolean ENABLE_REMOTE_INPUT =
@@ -466,6 +469,10 @@ public class StatusBar extends SystemUI implements DemoMode,
     private DozeServiceHost mDozeServiceHost = new DozeServiceHost();
     private boolean mWakeUpComingFromTouch;
     private PointF mWakeUpTouchLocation;
+
+    private AmbientSongRecognition mRecognition;
+    private AmbientSongRecognition.Results mResult;
+    private String mAmbientResults;
 
     int mPixelFormat;
     Object mQueueLock = new Object();
@@ -1148,6 +1155,9 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         final String list = mContext.getResources().getString(R.string.navMediaArrowsExcludeList);
         mNavMediaArrowsExcludeList = list.split(",");
+
+        startAmbientSongRecognition();
+
     }
 
     protected void createIconController() {
@@ -1548,6 +1558,151 @@ public class StatusBar extends SystemUI implements DemoMode,
         if (mAmbientIndicationContainer instanceof AutoReinflateContainer) {
             ((AutoReinflateContainer) mAmbientIndicationContainer).inflateLayout();
         }
+
+    }
+
+    private void updateAmbientSongState() {
+        int mAmbientSong = Settings.Secure.getIntForUser(mContext.getContentResolver(),
+                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId);
+        //mAmbientMediaPlaying = Settings.System.getIntForUser(mContext.getContentResolver(),
+        //        Settings.System.FORCE_AMBIENT_FOR_MEDIA, 2,
+        //        UserHandle.USER_CURRENT)
+        boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
+        if (mAmbientSong != 0 && mAmbientMediaPlaying != 0 && !mSystemMediaPlaying && !mScreenOn) {
+            startAmbientSongRecognition();
+        } else { 
+            stopAmbientSongRecognition();
+        }
+    }
+
+    private Runnable mStartRecognition = new Runnable() {
+        @Override
+        public void run() {
+            Log.v(TAG, "Will start listening again in 10 seconds");
+            updateAmbientSongState();
+        }
+    };
+
+    private Runnable mStopRecognition = new Runnable() {
+        @Override
+        public void run() {
+            mRecognition.stopRecording();
+        }
+    };
+
+    private void startAmbientSongRecognition() {
+        mRecognition = new AmbientSongRecognition(StatusBar.this);
+        mRecognition.startRecording();
+        mHandler.postDelayed(mStopRecognition, 19000);
+    }
+    
+    private void stopAmbientSongRecognition() {
+        mRecognition = new AmbientSongRecognition(StatusBar.this);
+        mRecognition.stopRecording();
+    }
+
+    private Runnable mSetTrackInfo = new Runnable() {
+        @Override
+        public void run() {
+            /* Setting this up */
+            final String identiSong = mResult.TrackName;
+            final String identiArtist = mResult.ArtistName;
+            if (!TextUtils.isEmpty(identiSong) && !TextUtils.isEmpty(identiArtist)) {
+                mAmbientResults = mContext.getResources().getString(R.string.ambientmusic_songinfo, identiSong.toString(), identiArtist.toString());
+            }
+            ((AmbientIndicationContainer) mAmbientIndicationContainer).setIndication(mMediaMetadata, mAmbientResults);
+            showNowPlayingNotification(mResult.TrackName, mResult.ArtistName);
+        }
+    };
+
+    /**
+     * Ambient Play callback when the track fingerprint matches the given recording.
+     * The results print out the Track Name, Artist, Album, and Album Artwork, but
+     * we only display the track name and artist in the view.
+     *
+     */
+    @Override
+    public void onResult(AmbientSongRecognition.Results result) {
+        mResult = result;
+        if (result.TrackName != null && result.ArtistName != null) {
+            mHandler.post(mSetTrackInfo);
+        }
+        mHandler.removeCallbacks(mStartRecognition);
+        mHandler.removeCallbacks(mStopRecognition);
+        mHandler.postDelayed(mStartRecognition, 10000);
+
+    }
+
+    private Runnable mHideTrackInfo = new Runnable() {
+        @Override
+        public void run() {
+            ((AmbientIndicationContainer) mAmbientIndicationContainer).hideIndication();
+        }
+    };
+
+    /**
+     * Ambient Play callback when no track fingerprint matches the given recording.
+     * Here we hdie the indication view when no match is given as a workaround for
+     * timing the current view. Since we start task every 10 seconds, the indication
+     * has a interval of 10 seconds before hiding. Once hidden, the recording will
+     * start again after 10 seconds.
+     *
+     */
+    @Override
+    public void onNoMatch() {
+        mHandler.removeCallbacks(mStartRecognition);
+        mHandler.removeCallbacks(mStopRecognition);
+        mHandler.post(mHideTrackInfo);
+        mHandler.postDelayed(mStartRecognition, 10000);
+    }
+
+    @Override
+    public void onAudioLevel(final float level) {
+        // no op
+    }
+
+    /**
+     * Ambient Play callback when the recording returns an error.
+     * This could be for multiple cases, such as the recording being
+     * iteruppted during data gathering or the xml can't be parsed from
+     * the database. In this case, we hide the indication view if not
+     * hidden already and restart the recording.
+     *
+     */
+    @Override
+    public void onError() {
+        mHandler.removeCallbacks(mStartRecognition);
+        mHandler.removeCallbacks(mStopRecognition);
+        mHandler.post(mHideTrackInfo);
+        mHandler.postDelayed(mStartRecognition, 10000);
+    }
+
+    private void showNowPlayingNotification(String trackName, String artistName) {
+        Notification.Builder mBuilder =
+                new Notification.Builder(mContext, "music_recognized_channel");
+        final Bundle extras = Bundle.forPair(Notification.EXTRA_SUBSTITUTE_APP_NAME,
+                mContext.getResources().getString(R.string.ambient_song_notification_title));
+        mBuilder.setSmallIcon(R.drawable.ic_music_note_24dp);
+        mBuilder.setContentText(String.format(mContext.getResources().getString(R.string.ambientmusic_songinfo),
+                                              trackName, artistName));
+        mBuilder.setColor(mContext.getResources().getColor(com.android.internal.R.color.system_notification_accent_color));
+        mBuilder.setAutoCancel(false);
+        mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC);
+        mBuilder.setLocalOnly(true);
+        mBuilder.setShowWhen(true);
+        mBuilder.setWhen(System.currentTimeMillis());
+        mBuilder.setTicker(String.format(mContext.getResources().getString(R.string.ambientmusic_songinfo),
+                                         trackName, artistName));
+        mBuilder.setExtras(extras);
+
+        NotificationManager mNotificationManager =
+                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        NotificationChannel channel = new NotificationChannel("music_recognized_channel",
+                mContext.getResources().getString(R.string.ambient_song_recognition_channel),
+                NotificationManager.IMPORTANCE_MIN);
+        mNotificationManager.createNotificationChannel(channel);
+        mNotificationManager.notify(122306791, mBuilder.build());
     }
 
     protected void reevaluateStyles() {
@@ -5833,6 +5988,29 @@ private void updateQSPanel() {
                 Settings.Secure.putInt(mContext.getContentResolver(),
                     Settings.Secure.SYSUI_ROUNDED_CONTENT_PADDING, (int) (res.getDimension(resourceIdPadding)/displayDensity));
             }
+        }
+    }
+
+   private AmbientSongSettingsObserver mAmbientSongSettingsObserver = new AmbientSongSettingsObserver(mHandler);
+    private class AmbientSongSettingsObserver extends ContentObserver {
+        AmbientSongSettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA),
+                    false, this, UserHandle.USER_ALL);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            update();
+        }
+
+        public void update() {
+            updateAmbientSongState();
         }
     }
 

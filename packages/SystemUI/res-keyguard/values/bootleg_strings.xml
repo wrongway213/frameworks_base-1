@@ -21,4 +21,9 @@
 <!-- Ambient Display Pixel-Like string -->
 <string name="ambientmusic_songinfo">%s by %s</string>
 
+<!-- The name of the recognition notification channel. -->
+<string name="ambient_song_recognition_channel">Recognized Music Notifications</string>
+<!-- The contents of the recognition notification. -->
+<string name="ambient_song_notification_title">Now Playing</string>
+
 </resources>
