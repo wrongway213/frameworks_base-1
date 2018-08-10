@@ -1562,13 +1562,10 @@ public class StatusBar extends SystemUI implements DemoMode,
     }
 
     private void updateAmbientSongState() {
-        int mAmbientSong = Settings.Secure.getIntForUser(mContext.getContentResolver(),
-                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId);
-        //mAmbientMediaPlaying = Settings.System.getIntForUser(mContext.getContentResolver(),
-        //        Settings.System.FORCE_AMBIENT_FOR_MEDIA, 2,
-        //        UserHandle.USER_CURRENT)
+        boolean mAmbientSongEnabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
+                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId) == 1;
         boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
-        if (mAmbientSong != 0 && mAmbientMediaPlaying != 0 && !mSystemMediaPlaying && !mScreenOn) {
+        if (mDozing && mAmbientMediaPlaying != 0 && mAmbientSongEnabled && !mSystemMediaPlaying) {
             startAmbientSongRecognition();
         } else { 
             stopAmbientSongRecognition();
