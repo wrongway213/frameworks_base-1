@@ -1565,7 +1565,12 @@ public class StatusBar extends SystemUI implements DemoMode,
                     Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId) == 1;
         boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
         boolean mDetectionReady = mBouncerShowing || mDozing || mSystemServicesProxy.isDreaming();
-        if (mDetectionReady && mAmbientMediaPlaying != 0 && mAmbientSongEnabled && !mSystemMediaPlaying) {
+    	if (!mAmbientSongEnabled) {
+			stopAmbientSongRecognition();
+			mHandler.post(mHideTrackInfo);
+    		return;
+    	} 
+        if (mDetectionReady && isAmbientContainerAvailable() && !mSystemMediaPlaying) {
             startAmbientSongRecognition();
         } else { 
             stopAmbientSongRecognition();
@@ -1596,6 +1601,9 @@ public class StatusBar extends SystemUI implements DemoMode,
     private void stopAmbientSongRecognition() {
         mRecognition = new AmbientSongRecognition(StatusBar.this);
         mRecognition.stopRecording();
+        mHandler.postDelayed(() -> {
+                 updateAmbientSongState();
+        }, 90000);
     }
 
     private Runnable mSetTrackInfo = new Runnable() {
@@ -1626,14 +1634,14 @@ public class StatusBar extends SystemUI implements DemoMode,
         }
         mHandler.removeCallbacks(mStartRecognition);
         mHandler.removeCallbacks(mStopRecognition);
-        mHandler.postDelayed(mStartRecognition, 30000);
+        mHandler.postDelayed(mStartRecognition, 20000);
 
     }
 
     private Runnable mHideTrackInfo = new Runnable() {
         @Override
         public void run() {
-            ((AmbientIndicationContainer) mAmbientIndicationContainer).hideIndication();
+            ((AmbientIndicationContainer)mAmbientIndicationContainer).hideIndication();
         }
     };
 
@@ -1671,7 +1679,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         mHandler.removeCallbacks(mStartRecognition);
         mHandler.removeCallbacks(mStopRecognition);
         mHandler.post(mHideTrackInfo);
-        mHandler.postDelayed(mStartRecognition, 30000);
+        mHandler.postDelayed(mStartRecognition, 20000);
     }
 
     private void showNowPlayingNotification(String trackName, String artistName) {
