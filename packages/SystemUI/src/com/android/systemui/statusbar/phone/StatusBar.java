@@ -1564,7 +1564,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         boolean mAmbientSongEnabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
                     Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId) == 1;
         boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
-        boolean mDetectionReady = !mBouncerShowing || mDozing || mSystemServicesProxy.isDreaming();
+        boolean mDetectionReady = mBouncerShowing || mDozing || mSystemServicesProxy.isDreaming();
         if (mDetectionReady && mAmbientMediaPlaying != 0 && mAmbientSongEnabled && !mSystemMediaPlaying) {
             startAmbientSongRecognition();
         } else { 
@@ -1626,7 +1626,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         }
         mHandler.removeCallbacks(mStartRecognition);
         mHandler.removeCallbacks(mStopRecognition);
-        mHandler.postDelayed(mStartRecognition, 10000);
+        mHandler.postDelayed(mStartRecognition, 30000);
 
     }
 
@@ -1671,7 +1671,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         mHandler.removeCallbacks(mStartRecognition);
         mHandler.removeCallbacks(mStopRecognition);
         mHandler.post(mHideTrackInfo);
-        mHandler.postDelayed(mStartRecognition, 10000);
+        mHandler.postDelayed(mStartRecognition, 30000);
     }
 
     private void showNowPlayingNotification(String trackName, String artistName) {
