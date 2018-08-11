@@ -1564,7 +1564,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         boolean mAmbientSongEnabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
                     Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId) == 1;
         boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
-        boolean mDetectionReady = mDozing || mBouncerShowing;
+        boolean mDetectionReady = !mBouncerShowing || mDozing || mSystemServicesProxy.isDreaming();
         if (mDetectionReady && mAmbientMediaPlaying != 0 && mAmbientSongEnabled && !mSystemMediaPlaying) {
             startAmbientSongRecognition();
         } else { 
