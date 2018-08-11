@@ -3431,6 +3431,17 @@ public class StatusBar extends SystemUI implements DemoMode,
         return themeInfo != null && themeInfo.isEnabled();
     }
 
+    public boolean isUsingProjectAATOMMTheme() {
+        OverlayInfo themeInfo = null;
+        try {
+            themeInfo = mOverlayManager.getOverlayInfo("com.android.system.theme.projectaatomm",
+                    mCurrentUserId);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return themeInfo != null && themeInfo.isEnabled();
+    }
+
     public boolean isCurrentRoundedSameAsFw() {
         Resources res = null;
         try {
@@ -5525,6 +5536,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         boolean useShishuNightsTheme = false;
         boolean useShishuIllusionsTheme = false;
         boolean useShishuImmensityTheme = false;
+        boolean useProjectAATOMMTheme = false;
         boolean useBlackTheme = false;
         boolean useDarkTheme = false;
         if (userThemeSetting == 0) {
@@ -5540,6 +5552,7 @@ public class StatusBar extends SystemUI implements DemoMode,
             useShishuNightsTheme = userThemeSetting == 5;
             useShishuIllusionsTheme = userThemeSetting == 6;
             useShishuImmensityTheme = userThemeSetting == 7;
+            useProjectAATOMMTheme = userThemeSetting == 8;
         }
         if (isUsingDarkTheme() != useDarkTheme) {
             try {
@@ -5613,6 +5626,19 @@ public class StatusBar extends SystemUI implements DemoMode,
                         useShishuImmensityTheme, mCurrentUserId);
                 mOverlayManager.setEnabled("com.android.systemui.theme.shishuimmensity",
                         useShishuImmensityTheme, mCurrentUserId);
+            } catch (RemoteException e) {
+                Log.w(TAG, "Can't change theme", e);
+            }
+        }
+
+        if (isUsingProjectAATOMMTheme() != useProjectAATOMMTheme) {
+            try {
+                mOverlayManager.setEnabled("com.android.system.theme.projectaatomm",
+                        useProjectAATOMMTheme, mCurrentUserId);
+                mOverlayManager.setEnabled("com.android.settings.theme.projectaatomm",
+                        useProjectAATOMMTheme, mCurrentUserId);
+                mOverlayManager.setEnabled("com.android.systemui.theme.projectaatomm",
+                        useProjectAATOMMTheme, mCurrentUserId);
             } catch (RemoteException e) {
                 Log.w(TAG, "Can't change theme", e);
             }
