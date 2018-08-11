@@ -16,22 +16,15 @@
 
 package com.android.systemui.qs;
 
-import android.app.ActivityManager;
 import android.content.Context;
-import android.content.om.IOverlayManager;
 import android.database.ContentObserver;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.Point;
-import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Handler;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -55,14 +48,9 @@ public class QSContainerImpl extends FrameLayout {
     private float mFullElevation;
     private Drawable mQsBackGround;
     private int mQsBackGroundAlpha;
-    private int mQsBackGroundColor;
-
-    private IOverlayManager mOverlayManager;
 
     public QSContainerImpl(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mOverlayManager = IOverlayManager.Stub.asInterface(
-                ServiceManager.getService(Context.OVERLAY_SERVICE));
         Handler mHandler = new Handler();
         SettingsObserver settingsObserver = new SettingsObserver(mHandler);
         settingsObserver.observe();
@@ -93,9 +81,6 @@ public class QSContainerImpl extends FrameLayout {
             getContext().getContentResolver().registerContentObserver(Settings.System
                     .getUriFor(Settings.System.QS_PANEL_BG_ALPHA), false,
                     this, UserHandle.USER_ALL);
-            getContext().getContentResolver().registerContentObserver(Settings.System
-                    .getUriFor(Settings.System.QS_PANEL_BG_COLOR), false,
-                    this, UserHandle.USER_ALL);
         }
 
         @Override
@@ -108,31 +93,11 @@ public class QSContainerImpl extends FrameLayout {
         mQsBackGroundAlpha = Settings.System.getIntForUser(getContext().getContentResolver(),
                 Settings.System.QS_PANEL_BG_ALPHA, 255,
                 UserHandle.USER_CURRENT);
-        mQsBackGroundColor = Settings.System.getIntForUser(getContext().getContentResolver(),
-                Settings.System.QS_PANEL_BG_COLOR, Color.WHITE,
-                UserHandle.USER_CURRENT);
-        setQsBackground();
-        if (isColorDark(mQsBackGroundColor)) {
-            try {
-                mOverlayManager.setEnabled("com.android.systemui.qstheme.dark",
-                        true, ActivityManager.getCurrentUser());
-            } catch (RemoteException e) {
-                Log.w("QSContainerImpl", "Can't change qs theme", e);
-            }
-        } else {
-            try {
-                mOverlayManager.setEnabled("com.android.systemui.qstheme.dark",
-                        false, ActivityManager.getCurrentUser());
-            } catch (RemoteException e) {
-                Log.w("QSContainerImpl", "Can't change qs theme", e);
-            }
-        }
-
+        setQsBackgroundAlpha();
     }
 
-    private void setQsBackground() {
+    private void setQsBackgroundAlpha() {
         if (mQsBackGround != null) {
-            mQsBackGround.setColorFilter(mQsBackGroundColor, PorterDuff.Mode.SRC_ATOP);
             mQsBackGround.setAlpha(mQsBackGroundAlpha);
             setBackground(mQsBackGround);
         }
@@ -201,15 +166,5 @@ public class QSContainerImpl extends FrameLayout {
     public void setExpansion(float expansion) {
         mQsExpansion = expansion;
         updateExpansion();
-    }
-
-    private boolean isColorDark(int color) {
-        double darkness = 1 - ( 0.299 * Color.red(color) + 0.587 * Color.green(color)
-                + 0.114 * Color.blue(color))/255;
-        if (darkness < 0.5) {
-            return false; // It's a light color
-        } else {
-            return true; // It's a dark color
-        }
     }
 }
