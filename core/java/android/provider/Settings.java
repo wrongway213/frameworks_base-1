@@ -5081,22 +5081,16 @@ public final class Settings {
         public static final String ANIM_TILE_INTERPOLATOR = "anim_tile_interpolator";
 
         /**
-         * Transparency of the qs panel
+         * Whether to change the transparency of the qs panel
          * @hide
          */
         public static final String QS_PANEL_BG_ALPHA = "qs_panel_bg_alpha";
 
         /**
-         * Color of the qs panel
+         * Whether to change the color of the qs panel
          * @hide
          */
         public static final String QS_PANEL_BG_COLOR = "qs_panel_bg_color";
-
-        /**
-         * Color of the qs panel evaluated from wallpaper
-         * @hide
-         */
-        public static final String QS_PANEL_BG_COLOR_WALL = "qs_panel_bg_color_wall";
 
         /**
          * Whether to change the color of the qs panel based on wallpaper

@@ -5670,28 +5670,7 @@ public class StatusBar extends SystemUI implements DemoMode,
             // Make sure we have the correct navbar/statusbar colors.
             mStatusBarWindowManager.setKeyguardDark(useDarkText);
         }
-        updateQSPanel();
         updateCorners();
-    }
-
-
-
-private void updateQSPanel() {
-        int userQsWallColorSetting = Settings.System.getIntForUser(mContext.getContentResolver(),
-                    Settings.System.QS_PANEL_BG_USE_WALL, 0, mCurrentUserId);
-        boolean setQsFromWall = userQsWallColorSetting == 1;
-        if (setQsFromWall) {
-            WallpaperColors systemColors = mColorExtractor
-                    .getWallpaperColors(WallpaperManager.FLAG_SYSTEM);
-            if (systemColors != null)
-            {
-                Color mColor = systemColors.getPrimaryColor();
-                int mColorInt = mColor.toArgb();
-                Settings.System.putIntForUser(mContext.getContentResolver(),
-                        Settings.System.QS_PANEL_BG_COLOR_WALL, mColorInt, mCurrentUserId);
-            }
-
-        }
     }
     
     private void updateThemeAndReinflate(){
@@ -7326,9 +7305,6 @@ private void updateQSPanel() {
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.SYSUI_ROUNDED_FWVALS),
                     false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.Secure.getUriFor(
-                    Settings.System.QS_PANEL_BG_USE_WALL),
-                    false, this, UserHandle.USER_ALL);
         }
 
         @Override
@@ -7374,8 +7350,6 @@ private void updateQSPanel() {
                 updateThemeAndReinflate();
             } else if (uri.equals(Settings.Secure.getUriFor(Settings.Secure.SYSUI_ROUNDED_FWVALS))) {
                 updateCorners();
-            } else if (uri.equals(Settings.System.getUriFor(Settings.System.QS_PANEL_BG_USE_WALL))) {
-                updateQSPanel();
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.ACCENT_PICKER))) {
                 // Unload the accents and update the accent only when the user asks.
