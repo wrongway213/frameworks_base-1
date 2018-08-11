@@ -6015,29 +6015,6 @@ private void updateQSPanel() {
         }
     }
 
-   private AmbientSongSettingsObserver mAmbientSongSettingsObserver = new AmbientSongSettingsObserver(mHandler);
-    private class AmbientSongSettingsObserver extends ContentObserver {
-        AmbientSongSettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.Secure.getUriFor(
-                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA),
-                    false, this, UserHandle.USER_ALL);
-        }
-
-        @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            update();
-        }
-
-        public void update() {
-            updateAmbientSongState();
-        }
-    }
-
     private void updateDozingState() {
         Trace.traceCounter(Trace.TRACE_TAG_APP, "dozing", mDozing ? 1 : 0);
         Trace.beginSection("StatusBar#updateDozingState");
@@ -7286,6 +7263,9 @@ private void updateQSPanel() {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.FORCE_AMBIENT_FOR_MEDIA),
                     false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA),
+                    false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.AMBIENT_VISUALIZER_ENABLED),
                     false, this, UserHandle.USER_ALL);
@@ -7405,6 +7385,9 @@ private void updateQSPanel() {
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.FORCE_AMBIENT_FOR_MEDIA))) {
                 setForceAmbient();
+            } else if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA))) {
+                updateAmbientSongState();
             } else if (uri.equals(Settings.Secure.getUriFor(
                     Settings.Secure.FP_QUICK_PULLDOWN_QS))) {
                 setFpToQuickPulldownQs();
