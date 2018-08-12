@@ -932,6 +932,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
     private boolean mLockscreenMediaMetadata;
     private StatusBarHeaderMachine mStatusBarHeaderMachine;
+    private boolean mAmbientSongEnabled;
 
     @Override
     public void start() {
@@ -1154,8 +1155,6 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         final String list = mContext.getResources().getString(R.string.navMediaArrowsExcludeList);
         mNavMediaArrowsExcludeList = list.split(",");
-
-        startAmbientSongRecognition();
 
     }
 
@@ -1561,16 +1560,14 @@ public class StatusBar extends SystemUI implements DemoMode,
     }
 
     private void updateAmbientSongState() {
-        boolean mAmbientSongEnabled = Settings.Secure.getIntForUser(mContext.getContentResolver(),
-                    Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA, 1, mCurrentUserId) == 1;
         boolean mSystemMediaPlaying = PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController);
         boolean mDetectionReady = mBouncerShowing || mDozing || mSystemServicesProxy.isDreaming();
     	if (!mAmbientSongEnabled) {
-			stopAmbientSongRecognition();
-			mHandler.post(mHideTrackInfo);
+        	mHandler.removeCallbacks(mStartRecognition);
+        	mHandler.removeCallbacks(mStopRecognition);
+        	mHandler.post(mHideTrackInfo);
     		return;
-    	} 
-        if (mDetectionReady && isAmbientContainerAvailable() && !mSystemMediaPlaying) {
+    	} else if (mDetectionReady && isAmbientContainerAvailable() && !mSystemMediaPlaying) {
             startAmbientSongRecognition();
         } else { 
             stopAmbientSongRecognition();
@@ -1580,6 +1577,7 @@ public class StatusBar extends SystemUI implements DemoMode,
     private Runnable mStartRecognition = new Runnable() {
         @Override
         public void run() {
+        	if (!mAmbientSongEnabled) return;
             Log.v(TAG, "Will start listening again in 10 seconds");
             updateAmbientSongState();
         }
@@ -7368,7 +7366,7 @@ public class StatusBar extends SystemUI implements DemoMode,
                 setForceAmbient();
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA))) {
-                updateAmbientSongState();
+                getAmbientSongState();
             } else if (uri.equals(Settings.Secure.getUriFor(
                     Settings.Secure.FP_QUICK_PULLDOWN_QS))) {
                 setFpToQuickPulldownQs();
@@ -7431,6 +7429,7 @@ public class StatusBar extends SystemUI implements DemoMode,
             setFpToDismissNotifications();
             setFpToQuickPulldownQs();
             updateKeyguardStatusSettings();
+            getAmbientSongState();
         }
     }
 
@@ -7566,6 +7565,13 @@ public class StatusBar extends SystemUI implements DemoMode,
         if (isAmbientContainerAvailable()) {
             ((AmbientIndicationContainer)mAmbientIndicationContainer).setIndication(mMediaMetadata, null);
         }
+    }
+
+    private void getAmbientSongState() {
+        mAmbientSongEnabled = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.FORCE_AMBIENT_DETECTION_FOR_MEDIA , 1,
+                UserHandle.USER_CURRENT) == 1;
+        updateAmbientSongState();
     }
 
     private boolean isAmbientContainerAvailable() {
